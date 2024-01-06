@@ -23,6 +23,7 @@ public class App {
         String adminUsername = scanner.nextLine();
         System.out.print("Enter Admin Password: ");
         String adminPassword = scanner.nextLine();
+        System.out.println("\n");
 
         if (authenticateAdmin(adminUsername, adminPassword)) {
             runProgram();
@@ -36,9 +37,7 @@ public class App {
     private static void runProgram() {
         StudentManagement studentManagement = new StudentManagement();
         Scanner scanner = new Scanner(System.in);
-
         
-
         try {
             // Setup JDBC connection 
             Connection connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/tbpbo", "root", "");
@@ -46,7 +45,7 @@ public class App {
 
              // Initialize database tables 
              String createStudentTableSQL = "CREATE TABLE IF NOT EXISTS students (NIM VARCHAR(10) PRIMARY KEY, name VARCHAR(255), major VARCHAR(255), tanggal DATE, waktu TIME)";
-             String createCourseTableSQL = "CREATE TABLE IF NOT EXISTS courses (courseCode VARCHAR(10) PRIMARY KEY, courseName VARCHAR(255), tanggal DATE, waktu TIME)";
+             String createCourseTableSQL = "CREATE TABLE IF NOT EXISTS courses (courseCode VARCHAR(10) PRIMARY KEY, courseName VARCHAR(255), tanggal DATE, waktu TIME, platformOrLocation VARCHAR(255), courseType VARCHAR(20))";
              String createEnrollmentTableSQL = "CREATE TABLE IF NOT EXISTS enrollments (NIM VARCHAR(10), courseCode VARCHAR(10), score INT, tanggal DATE, waktu TIME, PRIMARY KEY (NIM, courseCode))";
  
              statement.executeUpdate(createStudentTableSQL);
@@ -62,7 +61,7 @@ public class App {
  
              ResultSet courseResultSet = statement.executeQuery("SELECT * FROM courses");
              while (courseResultSet.next()) {
-                 Course course = new Course(courseResultSet.getString("courseCode"), courseResultSet.getString("courseName"));
+                 Course course = new Course(courseResultSet.getString("courseCode"), courseResultSet.getString("courseName"), courseResultSet.getString("platformOrLocation"),courseResultSet.getString("courseType"));
                  studentManagement.addCourse(course);
              }
  
@@ -119,20 +118,54 @@ public class App {
                         System.out.println("Mahasiswa Berhasil Ditambahkan!");
                         break;
 
+                // Saat menambahkan mata kuliah, minta pengguna memilih jenis mata kuliah (online atau offline)
                     case 2:
+                        System.out.println("1. Tambahkan Mata Kuliah Online");
+                        System.out.println("2. Tambahkan Mata Kuliah Offline");
+                        System.out.print("Pilih jenis mata kuliah (1/2): ");
+                        int courseTypeChoice = scanner.nextInt();
+                        scanner.nextLine(); // Consuming the newline character
+                    
                         System.out.print("Enter Course Code: ");
                         String courseCode = scanner.nextLine();
                         System.out.print("Enter Course Name: ");
                         String courseName = scanner.nextLine();
-
-                        Course newCourse = new Course(courseCode, courseName);
-                        studentManagement.addCourse(newCourse);
+                    
+                        String platformOrLocation = "";
+                        String courseType = "";
+                    
+                        if (courseTypeChoice == 1) {
+                            // Tambahkan mata kuliah online
+                            System.out.print("Enter Platform: ");
+                            platformOrLocation = scanner.nextLine();
+                            courseType = "Online";
+                        } else if (courseTypeChoice == 2) {
+                            // Tambahkan mata kuliah offline
+                            System.out.print("Enter Location: ");
+                            String location = scanner.nextLine();
+                            platformOrLocation = location; // Set platformOrLocation to location for offline courses
+                            courseType = "Offline";
+                        } else {
+                            System.out.println("Invalid choice. Please try again.");
+                            break; 
+                        }
+                    
+                        if (courseTypeChoice == 1) {
+                            OnlineCourse onlineCourse = new OnlineCourse(courseCode, courseName, platformOrLocation, courseType);
+                            studentManagement.addCourse(onlineCourse);
+                        } else if (courseTypeChoice == 2) {
+                            OfflineCourse offlineCourse = new OfflineCourse(courseCode, courseName, platformOrLocation, courseType);
+                            studentManagement.addCourse(offlineCourse);
+                        }
+                        
 
                         // Insert new course into the database
-                        String insertCourseSQL = "INSERT INTO courses (courseCode, courseName, tanggal, waktu) VALUES (?, ?, CURDATE(), CURTIME())";
+                        String insertCourseSQL = "INSERT INTO courses (courseCode, courseName, tanggal, waktu, platformOrLocation, courseType) VALUES (?, ?, CURDATE(), CURTIME(), ?, ?)";
                         PreparedStatement insertCourseStatement = connection.prepareStatement(insertCourseSQL);
                         insertCourseStatement.setString(1, courseCode);
                         insertCourseStatement.setString(2, courseName);
+                        insertCourseStatement.setString(3, platformOrLocation);
+                        insertCourseStatement.setString(4, courseType);
                         insertCourseStatement.executeUpdate();
 
                         System.out.println("Mata Kuliah Berhasil Ditambahkan!");
@@ -171,7 +204,7 @@ public class App {
                         break;
 
                     case 5:
-                        studentManagement.tampilkanCourses();
+                        studentManagement.tampilkanCourses(connection);
                         break;
 
                     case 6:
@@ -238,7 +271,7 @@ public class App {
                     
 
                     case 9:
-                        System.out.println("Existing Program.");
+                        System.out.println("Exiting Program.");
                         System.exit(0);
                         break;
 

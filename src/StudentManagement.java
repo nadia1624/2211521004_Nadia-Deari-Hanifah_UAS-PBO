@@ -1,4 +1,5 @@
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,16 +85,42 @@ public class StudentManagement implements EnrollmentSystem {
         }
     }
 
-    public void tampilkanCourses() {
-        System.out.println("Daftar Mata Kuliah\n");
-        for (Course course : courses.values()) {
-            System.out.println("Kode Mata Kuliah: " + course.getCourseCode());
-            System.out.println("Nama Mata Kuliah: " + course.getCourseName());
-            System.out.println("----------------------------");
-        }
-    }    
+    public void tampilkanCourses(Connection connection) {
+        System.out.println("\nDaftar Mata Kuliah\n");
     
-
+        try {
+            // Loop through the courses
+            for (Course course : courses.values()) {
+                System.out.println("Kode Mata Kuliah: " + course.getCourseCode());
+                System.out.println("Nama Mata Kuliah: " + course.getCourseName());
+    
+                // Ambil data jenis dan platform dari database
+                String getCourseDetailsSQL = "SELECT courseType, platformOrLocation FROM courses WHERE courseCode = ?";
+                try (PreparedStatement getCourseDetailsStatement = connection.prepareStatement(getCourseDetailsSQL)) {
+                    getCourseDetailsStatement.setString(1, course.getCourseCode());
+                    ResultSet courseDetailsResultSet = getCourseDetailsStatement.executeQuery();
+    
+                    if (courseDetailsResultSet.next()) {
+                        String courseType = courseDetailsResultSet.getString("courseType");
+                        String platformOrLocation = courseDetailsResultSet.getString("platformOrLocation");
+    
+                        if ("Online".equals(courseType)) {
+                            System.out.println("Jenis: Online");
+                            System.out.println("Platform: " + platformOrLocation);
+                        } else if ("Offline".equals(courseType)) {
+                            System.out.println("Jenis: Offline");
+                            System.out.println("Lokasi: " + platformOrLocation);
+                        }
+                    }
+                }
+                System.out.println("----------------------------");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+    
+    
     public Student getStudentbyNIM(String NIM){
         return students.get(NIM);
     }
@@ -103,49 +130,49 @@ public class StudentManagement implements EnrollmentSystem {
     }
 
     public void deleteStudent(Student student) {
-    // Hapus mahasiswa dari program
-    students.remove(student.getNIM());
+        // Hapus mahasiswa dari program
+        students.remove(student.getNIM());
 
-    // Hapus mahasiswa dari tabel enrollments di database
-    String deleteEnrollmentsSQL = "DELETE FROM enrollments WHERE NIM = ?";
-    try (PreparedStatement deleteEnrollmentsStatement = connection.prepareStatement(deleteEnrollmentsSQL)) {
-        deleteEnrollmentsStatement.setString(1, student.getNIM());
-        deleteEnrollmentsStatement.executeUpdate();
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
+        // Hapus mahasiswa dari tabel enrollments di database
+        String deleteEnrollmentsSQL = "DELETE FROM enrollments WHERE NIM = ?";
+        try (PreparedStatement deleteEnrollmentsStatement = connection.prepareStatement(deleteEnrollmentsSQL)) {
+            deleteEnrollmentsStatement.setString(1, student.getNIM());
+            deleteEnrollmentsStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
-    // Hapus mahasiswa dari tabel students di database
-    String deleteStudentSQL = "DELETE FROM students WHERE NIM = ?";
-    try (PreparedStatement deleteStudentStatement = connection.prepareStatement(deleteStudentSQL)) {
-        deleteStudentStatement.setString(1, student.getNIM());
-        deleteStudentStatement.executeUpdate();
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
-    }
+        // Hapus mahasiswa dari tabel students di database
+        String deleteStudentSQL = "DELETE FROM students WHERE NIM = ?";
+        try (PreparedStatement deleteStudentStatement = connection.prepareStatement(deleteStudentSQL)) {
+            deleteStudentStatement.setString(1, student.getNIM());
+            deleteStudentStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        }
 
     public void deleteCourse(Course course) {
-    // Hapus mata kuliah dari program
-    courses.remove(course.getCourseCode());
+        // Hapus mata kuliah dari program
+        courses.remove(course.getCourseCode());
 
-    // Hapus mata kuliah dari tabel enrollments di database
-    String deleteEnrollmentsSQL = "DELETE FROM enrollments WHERE courseCode = ?";
-    try (PreparedStatement deleteEnrollmentsStatement = connection.prepareStatement(deleteEnrollmentsSQL)) {
-        deleteEnrollmentsStatement.setString(1, course.getCourseCode());
-        deleteEnrollmentsStatement.executeUpdate();
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
+        // Hapus mata kuliah dari tabel enrollments di database
+        String deleteEnrollmentsSQL = "DELETE FROM enrollments WHERE courseCode = ?";
+        try (PreparedStatement deleteEnrollmentsStatement = connection.prepareStatement(deleteEnrollmentsSQL)) {
+            deleteEnrollmentsStatement.setString(1, course.getCourseCode());
+            deleteEnrollmentsStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 
-    // Hapus mata kuliah dari tabel courses di database
-    String deleteCourseSQL = "DELETE FROM courses WHERE courseCode = ?";
-    try (PreparedStatement deleteCourseStatement = connection.prepareStatement(deleteCourseSQL)) {
-        deleteCourseStatement.setString(1, course.getCourseCode());
-        deleteCourseStatement.executeUpdate();
-    } catch (SQLException e) {
-        e.printStackTrace();
-    }
+        // Hapus mata kuliah dari tabel courses di database
+        String deleteCourseSQL = "DELETE FROM courses WHERE courseCode = ?";
+        try (PreparedStatement deleteCourseStatement = connection.prepareStatement(deleteCourseSQL)) {
+            deleteCourseStatement.setString(1, course.getCourseCode());
+            deleteCourseStatement.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
 }
     
 
